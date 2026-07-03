@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RasaKita Budget Hub</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --surface: #121824;
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --brand-blue: #00bfff;
+            --brand-green: #39ff14;
+            --brand-purple: #bd00ff;
+            --brand-orange: #ff007f;
+            --border-color: #1e293b;
+            --glow-blue: 0 0 8px rgba(0, 191, 255, 0.6);
+            --glow-green: 0 0 8px rgba(57, 255, 20, 0.6);
+            --glow-purple: 0 0 8px rgba(189, 0, 255, 0.6);
+            --glow-orange: 0 0 8px rgba(255, 0, 127, 0.6);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            margin: 0;
+            padding: 14px 14px 80px 14px;
+            color: var(--text-main);
+        }
+
+        .app-page { display: none; }
+        .app-page.active-page { display: block; }
+
+        .sync-hub {
+            background: linear-gradient(135deg, #131c30, #0d1524);
+            border: 1px solid #24355a;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-sync {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            border: 1px solid transparent;
+        }
+        .btn-export { background: rgba(0, 191, 255, 0.1); color: var(--brand-blue); border-color: rgba(0, 191, 255, 0.3); }
+        .btn-import { background: rgba(57, 255, 20, 0.1); color: var(--brand-green); border-color: rgba(57, 255, 20, 0.3); }
+
+        .dashboard-container { display: flex; flex-direction: column; gap: 20px; }
+        .month-section-card { background: var(--surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 16px; }
+        .month-header-title { font-size: 18px; font-weight: 800; color: #fff; margin: 0 0 14px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .recap-card { background: #0d131f; border-radius: 12px; padding: 14px 8px; text-align: center; border: 1px solid var(--border-color); }
+        .recap-label { font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+        .recap-val { font-size: 14px; font-weight: 800; }
+        
+        .val-budgeted { color: var(--brand-blue); text-shadow: var(--glow-blue); }
+        .val-transfered { color: var(--brand-green); text-shadow: var(--glow-green); }
+        .val-income { color: var(--brand-purple); text-shadow: var(--glow-purple); }
+        .val-due { color: var(--brand-orange); text-shadow: var(--glow-orange); }
+
+        .nav-container { display: flex; align-items: center; justify-content: space-between; background: var(--surface); padding: 8px 12px; border-radius: 12px; margin-bottom: 14px; border: 1px solid var(--border-color); }
+        .btn { background: #1e293b; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-weight: 600; color: var(--text-main); cursor: pointer; font-size: 13px; }
+        .week-dropdown { flex-grow: 1; margin: 0 8px; padding: 8px; font-size: 14px; font-weight: 700; border: 1px solid var(--border-color); border-radius: 8px; background-color: #0d131f; text-align: center; color: var(--brand-blue); text-shadow: var(--glow-blue); }
+
+        .card { background: var(--surface); border-radius: 14px; border: 1px solid var(--border-color); padding-bottom: 10px; }
+        .row-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #161f30; }
+        .header-row { background: #131c2e; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); border-top-left-radius: 14px; border-top-right-radius: 14px; }
+        
+        .cat-area { display: flex; align-items: center; width: 55%; }
+        .btn-delete { background: rgba(255, 0, 127, 0.1); color: #ff0055; border: 1px solid rgba(255, 0, 127, 0.3); border-radius: 50%; width: 20px; height: 20px; font-size: 12px; font-weight: bold; margin-right: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .cat-input { border: 1px solid transparent; background: transparent; font-size: 14px; font-weight: 500; color: var(--text-main); width: 100%; padding: 4px; }
+        .cat-input:focus { background: #0d131f; border-color: var(--brand-blue); box-shadow: var(--glow-blue); outline: none; }
+        
+        .val-area { width: 45%; text-align: right; }
+        .val-input { width: 100%; border: 1px solid var(--border-color); background: #0d131f; text-align: right; font-size: 14px; font-weight: 600; padding: 6px 10px; border-radius: 8px; box-sizing: border-box; color: #fff; }
+        .val-input:focus { outline: none; border-color: var(--brand-blue); box-shadow: var(--glow-blue); }
+
+        .extra-income-row { background: rgba(57, 255, 20, 0.06); border-left: 3px solid var(--brand-green); }
+        .extra-income-row .val-input { color: #66ff66; border-color: rgba(57, 255, 20, 0.3); }
+        .system-income-row { background: rgba(189, 0, 255, 0.04); }
+        .system-income-row .val-input { color: #d866ff; border-color: rgba(189, 0, 255, 0.2); }
+
+        .badge-select { width: 100%; padding: 6px; font-size: 12px; font-weight: 700; border-radius: 8px; border: 1px solid var(--border-color); text-align: right; background: #0d131f; box-sizing: border-box; }
+        .pay-not { color: var(--brand-orange); background: rgba(255, 0, 127, 0.1); border-color: rgba(255,0,127,0.3); text-align: center; }
+        .pay-settled { color: var(--brand-blue); background: rgba(0, 191, 255, 0.1); border-color: rgba(0, 191, 255, 0.3); text-align: center; }
+
+        .summary-row { background: #111824; font-weight: 700; }
+        .summary-row .cat-input { font-weight: 700; pointer-events: none; color: #fff; }
+        .sub-summary-text { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+        .deduction-summary-text { font-size: 14px; font-weight: 700; color: #d866ff; text-shadow: var(--glow-purple); }
+        .summary-text { font-size: 16px; font-weight: 800; color: var(--brand-blue); text-shadow: var(--glow-blue); }
+        .alert-text { font-size: 14px; font-weight: 800; color: var(--brand-orange); text-shadow: var(--glow-orange); }
+
+        .btn-add-line { display: block; width: calc(100% - 28px); margin: 12px auto 4px auto; background: #0d131f; border: 1px dashed var(--border-color); padding: 10px; border-radius: 8px; font-weight: 600; color: var(--brand-blue); cursor: pointer; text-align: center; }
+        .rollover-box { margin-top: 16px; text-align: center; }
+        .btn-rollover { width: 100%; background: linear-gradient(135deg, #1e293b, #0f172a); color: #fff; padding: 12px; border: 1px solid var(--border-color); border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
+
+        .bottom-nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: #090d16; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-around; z-index: 1000; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; border: none; background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; gap: 4px; }
+        .nav-item.active-nav { color: var(--brand-blue); text-shadow: var(--glow-blue); }
+        .nav-icon { font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="sync-hub">
+    <button class="btn-sync btn-export" onclick="exportDataToFile()">📤 Export Data File</button>
+    <button class="btn-sync btn-import" onclick="document.getElementById('file-import-input').click()">📥 Import File</button>
+    <input type="file" id="file-import-input" accept=".json" style="display: none;" onchange="importDataFromFile(event)">
+</div>
+
+<div id="page-sheet" class="app-page active-page">
+    <div class="nav-container">
+        <button class="btn" onclick="moveWeek(-1)">← Prev</button>
+        <select id="weekSelector" class="week-dropdown" onchange="changeActiveWeekContext(this.value)">
+        </select>
+        <button class="btn" onclick="moveWeek(1)">Next →</button>
+    </div>
+
+    <div class="card">
+        <div class="row-item header-row">
+            <div class="cat-area">Category</div>
+            <div class="val-area" id="header-val-title">Value</div>
+        </div>
+        
+        <div id="dynamicRowsContainer"></div>
+
+        <button class="btn-add-line" onclick="addNewCategoryRow()">+ Add Custom Line</button>
+
+        <div class="row-item summary-row" style="margin-top:14px; border-top: 1px solid var(--border-color); background: #131a26;">
+            <div class="cat-area"><span class="cat-input" style="color: #fff;">TOTAL RAW BASE BUDGET</span></div>
+            <div class="val-area sub-summary-text" id="week-raw-base-display">0</div>
+        </div>
+
+        <div class="row-item summary-row" style="background: #101622;">
+            <div class="cat-area"><span class="cat-input" style="color: var(--text-muted); font-size:13px;">(-) Total Deductions applied</span></div>
+            <div class="val-area deduction-summary-text" id="week-total-deductions-display">0</div>
+        </div>
+
+        <div class="row-item summary-row" style="background: #111824; border-bottom: 2px dashed #1e293b;">
+            <div class="cat-area"><span class="cat-input" style="color: var(--brand-blue); font-weight:800;">TOTAL ALLOWANCE TO TRANSFER</span></div>
+            <div class="val-area summary-text" id="week-total-display">0</div>
+        </div>
+
+        <div class="row-item" style="background: rgba(57, 255, 20, 0.02); margin-top: 4px;">
+            <div class="cat-area"><span class="cat-input" style="font-weight:600; color:var(--brand-green);">Amount Transferred</span></div>
+            <div class="val-area">
+                <input type="text" id="amount-transferred-input" class="val-input" style="color:var(--brand-green); border-color: rgba(57,255,20,0.2);" placeholder="e.g. 5M + 2M" oninput="updateTransferValue(this.value)">
+            </div>
+        </div>
+        <div class="row-item" style="background: rgba(255, 0, 127, 0.02);">
+            <div class="cat-area"><span class="cat-input" style="font-weight:600; color:var(--brand-orange);">Missing to Transfer</span></div>
+            <div class="val-area alert-text" id="week-missing-display">0</div>
+        </div>
+        <div class="row-item">
+            <div class="cat-area"><span class="cat-input" style="font-weight:600;">Payment Confirmation</span></div>
+            <div class="val-area">
+                <select id="status-payment" class="badge-select pay-not" onchange="updateStatusState(this.value)">
+                    <option value="not">Not Received</option>
+                    <option value="settled">Received & Settled</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="rollover-box">
+        <button class="btn-rollover" onclick="triggerMonthRollover()">⚡ Copy Template to New Month</button>
+    </div>
+</div>
+
+<div id="page-dashboard" class="app-page">
+    <div class="dashboard-container" id="dashboardMonthlyContainer"></div>
+</div>
+
+<div class="bottom-nav-bar">
+    <button class="nav-item active-nav" id="nav-btn-sheet" onclick="switchPage('sheet')">
+        <span class="nav-icon">📋</span><span>Sheet View</span>
+    </button>
+    <button class="nav-item" id="nav-btn-dashboard" onclick="switchPage('dashboard')">
+        <span class="nav-icon">📊</span><span>Dashboard Recap</span>
+    </button>
+</div>
+
+<script>
+    let activeWeekKey = "w1";
+    let weeksConfig = {};
+    let budgetData = [];
+
+    function exportDataToFile() {
+        const payloadStr = JSON.stringify({ weeksConfig, budgetData }, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(payloadStr);
+        const datestamp = new Date().toISOString().slice(0,10);
+        const exportFileDefaultName = `rasakita_budget_${datestamp}.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    }
+
+    function importDataFromFile(event) {
+        const fileObj = event.target.files[0];
+        if (!fileObj) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const parsedContext = JSON.parse(e.target.result);
+                if (parsedContext.weeksConfig && parsedContext.budgetData) {
+                    weeksConfig = parsedContext.weeksConfig;
+                    budgetData = parsedContext.budgetData;
+                    
+                    injectMissingAugustWeeksIfNeeded();
+
+                    saveToLocalStorage();
+                    initSelector();
+                    renderActiveWeek(activeWeekKey);
+                    alert("✅ Data sync updated successfully!");
+                }
+            } catch (err) {
+                alert("❌ Error reading file structure.");
+            }
+        };
+        reader.readAsText(fileObj);
+        event.target.value = ""; 
+    }
+
+    function injectMissingAugustWeeksIfNeeded() {
+        if (!weeksConfig["w6"]) weeksConfig["w6"] = { label: "August 8th", month: "August", transferredRaw: "", payment: "not" };
+        if (!weeksConfig["w7"]) weeksConfig["w7"] = { label: "August 15th", month: "August", transferredRaw: "", payment: "not" };
+        if (!weeksConfig["w8"]) weeksConfig["w8"] = { label: "August 22nd", month: "August", transferredRaw: "", payment: "not" };
+
+        budgetData.forEach(item => {
+            if (!item.values) item.values = {};
+            // If it's a dynamic week generation, make sure extra/system incomes do NOT copy values to August automatically
+            let baseDefault = (item.label === "Food" || item.label === "vitamin" || item.label === "Electricity") ? (item.values["w5"] || "") : "";
+            if (item.isIncome || item.isExtra || item.isSystem) baseDefault = "";
+
+            if (item.values["w6"] === undefined) item.values["w6"] = baseDefault;
+            if (item.values["w7"] === undefined) item.values["w7"] = baseDefault;
+            if (item.values["w8"] === undefined) item.values["w8"] = baseDefault;
+        });
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem("rasakita_weeksConfig", JSON.stringify(weeksConfig));
+        localStorage.setItem("rasakita_budgetData", JSON.stringify(budgetData));
+    }
+
+    function loadFromLocalStorageOrSeed() {
+        const localWeeks = localStorage.getItem("rasakita_weeksConfig");
+        const localData = localStorage.getItem("rasakita_budgetData");
+
+        if (localWeeks && localData) {
+            weeksConfig = JSON.parse(localWeeks);
+            budgetData = JSON.parse(localData);
+            injectMissingAugustWeeksIfNeeded();
+        } else {
+            weeksConfig = {
+                "w1": { label: "July 1st", month: "July", transferredRaw: "10.000.000", payment: "settled" },
+                "w2": { label: "July 8th", month: "July", transferredRaw: "", payment: "not" },
+                "w3": { label: "July 15th", month: "July", transferredRaw: "", payment: "not" },
+                "w4": { label: "July 22nd", month: "July", transferredRaw: "", payment: "not" },
+                "w5": { label: "August 1st", month: "August", transferredRaw: "", payment: "not" },
+                "w6": { label: "August 8th", month: "August", transferredRaw: "", payment: "not" },
+                "w7": { label: "August 15th", month: "August", transferredRaw: "", payment: "not" },
+                "w8": { label: "August 22nd", month: "August", transferredRaw: "", payment: "not" }
+            };
+            budgetData = [
+                { id: "c1", label: "Food", values: { w1: "800.000", w2: "800.000", w3: "500.000", w4: "500.000", w5: "500.000", w6: "500.000", w7: "500.000", w8: "500.000" } },
+                { id: "c2", label: "Rian Monthly", values: { w1: "10.000.000", w2: "", w3: "", w4: "", w5: "10.000.000", w6: "", w7: "", w8: "" } },
+                { id: "c3", label: "Taxes", values: { w1: "2.900.000", w2: "", w3: "", w4: "", w5: "1.900.000", w6: "", w7: "", w8: "" } },
+                { id: "c4", label: "Rice field Nephew", values: { w1: "5.000.000", w2: "", w3: "", w4: "", w5: "5.000.000", w6: "", w7: "", w8: "" } },
+                { id: "c5", label: "School Rama", values: { w1: "", w2: "2.500.000", w3: "", w4: "", w5: "2.500.000", w6: "", w7: "", w8: "" } },
+                { id: "c7", label: "medecin", values: { w1: "50.000", w2: "", w3: "", w4: "", w5: "50.000", w6: "", w7: "", w8: "" } },
+                { id: "c8", label: "vitamin", values: { w1: "80.000", w2: "80.000", w3: "80.000", w4: "80.000", w5: "80.000", w6: "80.000", w7: "80.000", w8: "80.000" } },
+                { id: "c9", label: "BPJS", values: { w1: "1.400.000", w2: "", w3: "", w4: "", w5: "1.050.000", w6: "", w7: "", w8: "" } },
+                { id: "c10", label: "Water house", values: { w1: "300.000", w2: "", w3: "", w4: "", w5: "300.000", w6: "", w7: "", w8: "" } },
+                { id: "c11", label: "Electricity", values: { w1: "50.000", w2: "50.000", w3: "50.000", w4: "50.000", w5: "50.000", w6: "50.000", w7: "50.000", w8: "50.000" } },
+                { id: "c12", label: "RT/RW", values: { w1: "50.000", w2: "", w3: "", w4: "", w5: "50.000", w6: "", w7: "", w8: "" } },
+                { id: "c13", label: "Extra Local (Income)", isIncome: true, isExtra: true, values: { w1: "10.000.000", w2: "", w3: "", w4: "", w5: "", w6: "", w7: "", w8: "" } },
+                { id: "c-deduction", label: "Deduced from previous month", isIncome: true, isSystem: true, values: { w1: "", w2: "", w3: "", w4: "", w5: "", w6: "", w7: "", w8: "" } },
+                { id: "c-overtransfer", label: "Extra budget transferred", isIncome: true, isSystem: true, values: { w1: "", w2: "", w3: "", w4: "", w5: "", w6: "", w7: "", w8: "" } }
+            ];
+        }
+        saveToLocalStorage();
+    }
+
+    function initSelector() {
+        const select = document.getElementById('weekSelector');
+        select.innerHTML = "";
+        Object.keys(weeksConfig).forEach(k => {
+            let opt = document.createElement('option');
+            opt.value = k;
+            opt.innerText = `${weeksConfig[k].month} - ${weeksConfig[k].label}`;
+            select.appendChild(opt);
+        });
+        select.value = activeWeekKey;
+    }
+
+    function changeActiveWeekContext(weekKey) {
+        activeWeekKey = weekKey;
+        renderActiveWeek(weekKey);
+    }
+
+    function renderActiveWeek(weekKey) {
+        if (!weeksConfig[weekKey]) return;
+        document.getElementById('header-val-title').innerText = `${weeksConfig[weekKey].label} Value`;
+        
+        const container = document.getElementById('dynamicRowsContainer');
+        container.innerHTML = "";
+
+        budgetData.forEach(item => {
+            if ((item.id === "c-deduction" || item.id === "c-overtransfer") && !item.values[weekKey]) return;
+
+            let row = document.createElement('div');
+            if (item.isExtra) row.className = "row-item extra-income-row";
+            else if (item.isSystem) row.className = "row-item system-income-row";
+            else row.className = "row-item";
+            
+            let isProtected = (item.isExtra || item.isSystem);
+
+            row.innerHTML = `
+                <div class="cat-area">
+                    <button class="btn-delete" onclick="deleteLine('${item.id}')" ${isProtected ? 'disabled style="opacity:0.2;"' : ''}>−</button>
+                    <input type="text" class="cat-input" value="${item.label}" onchange="updateLabel('${item.id}', this.value)" ${isProtected ? 'disabled' : ''}>
+                </div>
+                <div class="val-area">
+                    <input type="text" class="val-input" value="${item.values[weekKey] || ''}" oninput="updateAmount('${item.id}', this.value)" ${isProtected && !item.isExtra ? 'disabled' : ''}>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+
+        document.getElementById('amount-transferred-input').value = weeksConfig[weekKey].transferredRaw || "";
+        
+        let pSel = document.getElementById('status-payment');
+        pSel.value = weeksConfig[weekKey].payment || "not";
+        pSel.className = "badge-select " + (pSel.value === 'settled' ? 'pay-settled' : 'pay-not');
+
+        refreshCalculationsOnly();
+    }
+
+    function updateLabel(id, newLabel) {
+        let match = budgetData.find(x => x.id === id);
+        if(match) { match.label = newLabel; saveToLocalStorage(); }
+    }
+
+    function updateAmount(id, val) {
+        let match = budgetData.find(x => x.id === id);
+        if(match) {
+            match.values[activeWeekKey] = val.replace(/\./g, '');
+            saveToLocalStorage();
+            refreshCalculationsOnly();
+        }
+    }
+
+    function updateTransferValue(val) {
+        weeksConfig[activeWeekKey].transferredRaw = val;
+        saveToLocalStorage();
+        refreshCalculationsOnly();
+    }
+
+    function refreshCalculationsOnly() {
+        let rawBaseTotal = 0;
+        let deductionsTotal = 0;
+
+        budgetData.forEach(item => {
+            let val = parseVal(item.values[activeWeekKey]);
+            if (item.id === "c13") return; 
+            else if (item.id === "c-deduction" || item.id === "c-overtransfer") deductionsTotal += val;
+            else if (item.isIncome) rawBaseTotal -= val;
+            else rawBaseTotal += val;
+        });
+
+        let finalAllowanceTransferTarget = rawBaseTotal - deductionsTotal;
+
+        document.getElementById('week-raw-base-display').innerText = fmt(rawBaseTotal);
+        document.getElementById('week-total-deductions-display').innerText = fmt(deductionsTotal);
+        document.getElementById('week-total-display').innerText = fmt(finalAllowanceTransferTarget);
+
+        let actualTransferred = parseComplexExpression(weeksConfig[activeWeekKey].transferredRaw);
+        document.getElementById('week-missing-display').innerText = fmt(Math.max(0, finalAllowanceTransferTarget - actualTransferred));
+
+        document.querySelectorAll('.val-input').forEach(input => {
+            if (document.activeElement !== input && input.id !== 'amount-transferred-input') {
+                let parsed = parseVal(input.value);
+                input.value = parsed > 0 ? fmt(parsed) : "";
+            }
+        });
+    }
+
+    function parseComplexExpression(val) {
+        if (!val) return 0;
+        return val.toString().replace(/\./g, '').split('+').reduce((acc, p) => acc + (parseFloat(p.trim()) || 0), 0);
+    }
+
+    function parseVal(val) {
+        if (!val) return 0;
+        return parseFloat(val.toString().replace(/\./g, '')) || 0;
+    }
+
+    function fmt(num) {
+        return num === 0 ? "0" : num.toLocaleString('id-ID');
+    }
+
+    function updateStatusState(value) {
+        weeksConfig[activeWeekKey].payment = value;
+        saveToLocalStorage();
+        let pSel = document.getElementById('status-payment');
+        pSel.className = "badge-select " + (value === 'settled' ? 'pay-settled' : 'pay-not');
+    }
+
+    function deleteLine(id) {
+        budgetData = budgetData.filter(x => x.id !== id);
+        saveToLocalStorage();
+        renderActiveWeek(activeWeekKey);
+    }
+
+    function addNewCategoryRow() {
+        let newId = "c-" + Date.now();
+        let newRowObj = { id: newId, label: "New Category", values: {} };
+        Object.keys(weeksConfig).forEach(k => newRowObj.values[k] = "");
+        let extraIndex = budgetData.findIndex(item => item.id === "c13");
+        if (extraIndex !== -1) budgetData.splice(extraIndex, 0, newRowObj);
+        else budgetData.push(newRowObj);
+        saveToLocalStorage();
+        renderActiveWeek(activeWeekKey);
+    }
+
+    function rebuildDashboardRecapView() {
+        const container = document.getElementById('dashboardMonthlyContainer');
+        container.innerHTML = "";
+        let dynamicMonthsList = [];
+        Object.keys(weeksConfig).forEach(wk => {
+            let mName = weeksConfig[wk].month;
+            if (!dynamicMonthsList.includes(mName)) dynamicMonthsList.push(mName);
+        });
+
+        dynamicMonthsList.forEach(monthKey => {
+            let monthBudgeted = 0, monthTransferred = 0, monthExtraIncome = 0;
+            Object.keys(weeksConfig).forEach(wk => {
+                if (weeksConfig[wk].month === monthKey) {
+                    let weekSum = 0, weekSystemIncomes = 0;
+                    budgetData.forEach(item => {
+                        let val = parseVal(item.values[wk]);
+                        if (item.id === "c13") monthExtraIncome += val;
+                        else if (item.isIncome) weekSystemIncomes += val;
+                        else weekSum += val;
+                    });
+                    monthBudgeted += (weekSum - weekSystemIncomes);
+                    monthTransferred += parseComplexExpression(weeksConfig[wk].transferredRaw);
+                }
+            });
+
+            let section = document.createElement('div');
+            section.className = "month-section-card";
+            section.innerHTML = `
+                <div class="month-header-title">${monthKey} Summary Dashboard</div>
+                <div class="dashboard-grid">
+                    <div class="recap-card"><div class="recap-label">Total Net Budget</div><div class="recap-val val-budgeted">${fmt(monthBudgeted)}</div></div>
+                    <div class="recap-card"><div class="recap-label">Extra Income</div><div class="recap-val val-income">${fmt(monthExtraIncome)}</div></div>
+                    <div class="recap-card"><div class="recap-label">Total Transferred</div><div class="recap-val val-transfered">${fmt(monthTransferred)}</div></div>
+                    <div class="recap-card"><div class="recap-label">Missing to Transfer</div><div class="recap-val val-due">${fmt(Math.max(0, monthBudgeted - monthTransferred))}</div></div>
+                </div>`;
+            container.appendChild(section);
+        });
+    }
+
+    function triggerMonthRollover() {
+        let nextMonthInput = prompt("Enter name for the new month setup profile:", "September");
+        if (!nextMonthInput) return;
+        let currentMonthName = weeksConfig[activeWeekKey].month;
+        let sourceWeekKeys = Object.keys(weeksConfig).filter(k => weeksConfig[k].month === currentMonthName);
+        let timestamp = Date.now();
+        let newKeys = [`c-${timestamp}-1`, `c-${timestamp}-2`, `c-${timestamp}-3`, `c-${timestamp}-4`];
+
+        weeksConfig[newKeys[0]] = { label: "1st Week", month: nextMonthInput, transferredRaw: "", payment: "not" };
+        weeksConfig[newKeys[1]] = { label: "8th Week", month: nextMonthInput, transferredRaw: "", payment: "not" };
+        weeksConfig[newKeys[2]] = { label: "15th Week", month: nextMonthInput, transferredRaw: "", payment: "not" };
+        weeksConfig[newKeys[3]] = { label: "22nd Week", month: nextMonthInput, transferredRaw: "", payment: "not" };
+
+        budgetData.forEach(item => {
+            newKeys.forEach((nk, index) => {
+                let sourceKey = sourceWeekKeys[index % sourceWeekKeys.length];
+                item.values[nk] = (item.isIncome || item.id === "c-deduction" || item.id === "c-overtransfer") ? "" : (item.values[sourceKey] || "");
+            });
+        });
+
+        activeWeekKey = newKeys[0];
+        initSelector();
+        saveToLocalStorage();
+        renderActiveWeek(activeWeekKey);
+    }
+
+    function switchPage(targetPageId) {
+        document.querySelectorAll('.app-page').forEach(page => page.classList.remove('active-page'));
+        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-nav'));
+        document.getElementById(`page-${targetPageId}`).classList.add('active-page');
+        document.getElementById(`nav-btn-${targetPageId}`).classList.add('active-nav');
+        if (targetPageId === 'dashboard') rebuildDashboardRecapView();
+    }
+
+    function moveWeek(dir) {
+        let keys = Object.keys(weeksConfig);
+        let currIdx = keys.indexOf(activeWeekKey);
+        let targetIdx = currIdx + dir;
+        if (targetIdx >= 0 && targetIdx < keys.length) {
+            document.getElementById('weekSelector').value = keys[targetIdx];
+            changeActiveWeekContext(keys[targetIdx]);
+        }
+    }
+
+    window.onload = function() {
+        // Clear local storage fields once to ensure the new blank seed applies immediately
+        localStorage.removeItem("rasakita_weeksConfig");
+        localStorage.removeItem("rasakita_budgetData");
+
+        loadFromLocalStorageOrSeed();
+        initSelector();
+        renderActiveWeek(activeWeekKey);
+    };
+</script>
+</body>
+</html>
